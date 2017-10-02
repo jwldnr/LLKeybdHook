@@ -68,7 +68,7 @@
         VK_K = 0x4B,
         VK_L = 0x4C,
         VK_M = 0x4D,
-        VK_ = 0x4E,
+        VK_N = 0x4E,
         VK_O = 0x4F,
         VK_P = 0x50,
         VK_Q = 0x51,
