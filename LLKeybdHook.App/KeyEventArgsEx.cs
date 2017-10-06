@@ -54,7 +54,7 @@ namespace jwldnr.LLKeybdHook.App
             const uint maskExtendedKey = 0x1;
 
             var isExtendedKey = (keyboardHookStruct.flags & maskExtendedKey) > 0;
-            var isInjected = (keyboardHookStruct.flags & (uint)KEYBDHOOKF.LLKHF_INJECTED) != 0;
+            var isInjected = (keyboardHookStruct.flags & (int)KEYBDHOOKF.LLKHF_INJECTED) != 0;
 
             return new KeyEventArgsEx(
                 keyData,
