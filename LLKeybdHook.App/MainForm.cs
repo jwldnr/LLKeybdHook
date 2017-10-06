@@ -7,18 +7,26 @@ namespace jwldnr.LLKeybdHook.App
 {
     public partial class MainForm : Form
     {
+        private bool CooldownIsReady => false == _cooldownTimer.Enabled || false == _hasCooldown;
+
+        private readonly Timer _cooldownTimer = new Timer();
         private readonly InputSimulator _inputSimulator = new InputSimulator();
         private readonly KeyboardHook _keyboardHook = new KeyboardHook();
 
-        private int i;
-
-        private int j;
+        private bool _hasCooldown;
 
         public MainForm()
         {
             InitializeComponent();
+            InitializeCooldownTimer();
 
             InstallHook();
+        }
+
+        private void InitializeCooldownTimer()
+        {
+            _cooldownTimer.Interval = 2000;
+            _cooldownTimer.Tick += OnTimerTick;
         }
 
         private void InstallHook()
@@ -44,38 +52,45 @@ namespace jwldnr.LLKeybdHook.App
 
         private void OnKeyDown(object sender, KeyEventArgsEx e)
         {
-            if (e.IsInjected || Keys.W != e.KeyCode)
+            if (Keys.W != e.KeyCode || e.IsInjected)
                 return;
 
-            if (i % 6 == 0)
-            {
-                e.SuppressKeyPress = true;
+            //if (e.IsInjected)
+            //    e.Handled = true;
 
-                _inputSimulator.Keyboard.KeyPress(VirtualKeyCode.VK_Q);
-                _inputSimulator.Keyboard.KeyPress(VirtualKeyCode.VK_W);
+            if (!CooldownIsReady)
+                return;
 
-                i = 0;
-            }
-            else if (j % 4 == 0)
-            {
-                e.SuppressKeyPress = true;
+            e.SuppressKeyPress = true;
+            e.Handled = true;
 
-                _inputSimulator.Keyboard.KeyPress(VirtualKeyCode.VK_E);
-                _inputSimulator.Keyboard.KeyPress(VirtualKeyCode.VK_W);
+            _cooldownTimer.Enabled = true;
+            _hasCooldown = true;
 
-                j = 0;
-            }
+            _inputSimulator.Keyboard
+                .KeyPress(VirtualKeyCode.VK_Q)
+                .KeyPress(VirtualKeyCode.VK_W);
 
-            i = i + 1;
-            j = j + 1;
+            //Log($"{e.KeyCode} down");
         }
 
         private void OnKeyUp(object sender, KeyEventArgsEx e)
         {
-            if (e.IsInjected || Keys.W != e.KeyCode)
-                return;
+            //if (Keys.W != e.KeyCode)
+            //    return;
 
-            Log($"{e.KeyCode} up");
+            //if (e.IsInjected)
+            //    e.Handled = true;
+
+            //Log($"{e.KeyCode} up");
+        }
+
+        private void OnTimerTick(object sender, EventArgs e)
+        {
+            Log(nameof(OnTimerTick));
+
+            _cooldownTimer.Enabled = false;
+            _hasCooldown = false;
         }
 
         private void UninstallHook()
