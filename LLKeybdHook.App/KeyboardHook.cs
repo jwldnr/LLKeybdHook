@@ -12,35 +12,37 @@ namespace jwldnr.LLKeybdHook.App
 
         private HookProcedureHandle _hookProcedureHandle;
 
-        public delegate void KeyboardHookCallback(object sender, KeyEventArgsEx e);
+        internal delegate void KeyboardHookCallback(object sender, KeyEventArgsEx e);
 
-        public event KeyboardHookCallback KeyDown;
+        internal delegate bool KeyboardHookHandler(CallbackData data);
 
-        public event KeyboardHookCallback KeyUp;
+        internal event KeyboardHookCallback KeyDown;
+
+        internal event KeyboardHookCallback KeyUp;
 
         public void Dispose()
         {
             Uninstall();
         }
 
-        public void Install()
+        internal void Install()
         {
             _hookProcedureHandle = SetHook(HookIds.WH_KEYBOARD_LL, Callback);
         }
 
-        public void Uninstall()
+        internal void Uninstall()
         {
             _hookProcedureHandle.Dispose();
         }
 
-        private static IntPtr HookProcedure(int nCode, IntPtr wParam, IntPtr lParam, Callback callback)
+        private static IntPtr HookProcedure(int nCode, IntPtr wParam, IntPtr lParam, KeyboardHookHandler hookHandler)
         {
             if (nCode != 0)
                 return NativeMethods.CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
 
             var callbackData = new CallbackData(wParam, lParam);
 
-            return callback(callbackData)
+            return hookHandler(callbackData)
                 ? NativeMethods.CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam)
                 : new IntPtr(-1);
         }
@@ -58,7 +60,7 @@ namespace jwldnr.LLKeybdHook.App
         private void InvokeKeyDown(KeyEventArgsEx e)
         {
             var handler = KeyDown;
-            if (handler == null || e.Handled || !e.IsKeyDown)
+            if (null == handler || e.Handled || false == e.IsKeyDown)
                 return;
 
             handler(this, e);
@@ -67,19 +69,19 @@ namespace jwldnr.LLKeybdHook.App
         private void InvokeKeyUp(KeyEventArgsEx e)
         {
             var handler = KeyUp;
-            if (null == handler || e.Handled || !e.IsKeyUp)
+            if (null == handler || e.Handled || false == e.IsKeyUp)
                 return;
 
             handler(this, e);
         }
 
-        private HookProcedureHandle SetHook(int hookId, Callback callback)
+        private HookProcedureHandle SetHook(int hookId, KeyboardHookHandler hookHandler)
         {
-            _hookProcedure = (code, param, lParam) => HookProcedure(code, param, lParam, callback);
+            _hookProcedure = (code, param, lParam) => HookProcedure(code, param, lParam, hookHandler);
 
             var hookHandle = NativeMethods.SetWindowsHookEx(hookId, _hookProcedure, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
 
-            if (!hookHandle.IsInvalid)
+            if (false == hookHandle.IsInvalid)
                 return hookHandle;
 
             var errorCode = Marshal.GetLastWin32Error();
