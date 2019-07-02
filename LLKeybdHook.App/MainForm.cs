@@ -9,7 +9,9 @@ namespace jwldnr.LLKeybdHook.App
     public partial class MainForm : Form
     {
         private readonly InputSimulator _inputSimulator = new InputSimulator();
-        private readonly KeyboardHook _keyboardHook = new KeyboardHook();
+
+        private GlobalHook _mouseHook;
+        private GlobalHook _keyboardHook;
 
         private bool _isOnCooldown;
 
@@ -17,14 +19,22 @@ namespace jwldnr.LLKeybdHook.App
         {
             InitializeComponent();
 
-            InstallHook();
+            InstallHooks();
         }
 
-        private void InstallHook()
+        private void InstallHooks()
         {
-            _keyboardHook.Install();
+            if (null == _mouseHook)
+            {
+                _mouseHook = new GlobalHook(GlobalHook.HookTypes.Mouse);
+            }
 
-            _keyboardHook.KeyDown += OnKeyDown;
+            if (null == _keyboardHook)
+            {
+                _keyboardHook = new GlobalHook(GlobalHook.HookTypes.Keyboard);
+                _keyboardHook.KeyDown += OnKeyDown;
+            }
+
 
             Application.ApplicationExit += OnApplicationExit;
         }
@@ -40,12 +50,24 @@ namespace jwldnr.LLKeybdHook.App
 
         private void OnApplicationExit(object sender, EventArgs e)
         {
-            UninstallHook();
+            if (null != _mouseHook)
+            {
+                _mouseHook.Dispose();
+                _mouseHook = null;
+            }
+
+            if (null != _keyboardHook)
+            {
+                _keyboardHook.KeyDown -= OnKeyDown;
+
+                _keyboardHook.Dispose();
+                _keyboardHook = null;
+            }
         }
 
         private void OnKeyDown(object sender, KeyEventArgsEx e)
         {
-            if (Keys.W != e.KeyCode || e.IsInjected)
+            if (Keys.W != e.KeyCode || e.Injected)
                 return;
 
             if (_isOnCooldown)
@@ -69,13 +91,6 @@ namespace jwldnr.LLKeybdHook.App
 
                 _isOnCooldown = false;
             });
-        }
-
-        private void UninstallHook()
-        {
-            _keyboardHook.KeyDown -= OnKeyDown;
-
-            _keyboardHook.Dispose();
         }
     }
 }
