@@ -9,7 +9,9 @@ namespace jwldnr.LLKeybdHook.App
     public partial class MainForm : Form
     {
         private readonly InputSimulator _inputSimulator = new InputSimulator();
-        private readonly KeyboardHook _keyboardHook = new KeyboardHook();
+
+        private GlobalHook _mouseHook;
+        private GlobalHook _keyboardHook;
 
         private readonly Random _random = new Random();
 
@@ -22,15 +24,22 @@ namespace jwldnr.LLKeybdHook.App
         {
             InitializeComponent();
 
-            InstallHook();
+            InstallHooks();
         }
 
-        private void InstallHook()
+        private void InstallHooks()
         {
-            _keyboardHook.Install();
+            if (null == _mouseHook)
+            {
+                _mouseHook = new GlobalHook(GlobalHook.HookTypes.Mouse);
+                _mouseHook.MouseDown += OnMouseDown;
+            }
 
-            _keyboardHook.KeyDown += OnKeyDown;
-            //_keyboardHook.KeyUp += OnKeyUp;
+            if (null == _keyboardHook)
+            {
+                _keyboardHook = new GlobalHook(GlobalHook.HookTypes.Keyboard);
+                _keyboardHook.KeyDown += OnKeyDown;
+            }
 
             Application.ApplicationExit += OnApplicationExit;
         }
@@ -46,12 +55,26 @@ namespace jwldnr.LLKeybdHook.App
 
         private void OnApplicationExit(object sender, EventArgs e)
         {
-            UninstallHook();
+            if (null != _mouseHook)
+            {
+                _mouseHook.MouseDown -= OnMouseDown;
+
+                _mouseHook.Dispose();
+                _mouseHook = null;
+            }
+
+            if (null != _keyboardHook)
+            {
+                _keyboardHook.KeyDown -= OnKeyDown;
+
+                _keyboardHook.Dispose();
+                _keyboardHook = null;
+            }
         }
 
         private void OnKeyDown(object sender, KeyEventArgsEx e)
         {
-            if (Keys.W != e.KeyCode || e.IsInjected)
+            if (Keys.W != e.KeyCode || e.Injected)
                 return;
 
             var key = GetAvailableAbility();
@@ -66,20 +89,13 @@ namespace jwldnr.LLKeybdHook.App
             e.Handled = true;
         }
 
-        private void OnKeyUp(object sender, KeyEventArgsEx e)
+        private void OnMouseDown(object sender, MouseEventArgs e)
         {
-            if (Keys.Q != e.KeyCode
-                && Keys.W != e.KeyCode
-                && Keys.E != e.KeyCode
-                && Keys.R != e.KeyCode
-                && Keys.T != e.KeyCode)
-            {
+            if (MouseButtons.Right != e.Button || _qOnCooldown)
                 return;
-            }
 
-            //_inputSimulator
-            //    .Keyboard
-            //    .Sleep(0);
+            UseAbilityAt(VirtualKeyCode.VK_Q, false);
+            SetCooldownFor(VirtualKeyCode.VK_Q, true);
         }
 
         private int GetCooldownFor(VirtualKeyCode key)
@@ -110,7 +126,7 @@ namespace jwldnr.LLKeybdHook.App
                 _eOnCooldown = value;
         }
 
-        private Task UseAbilityAt(VirtualKeyCode key)
+        private Task UseAbilityAt(VirtualKeyCode key, bool sendDefault = true)
         {
             return Task.Run(async () =>
             {
@@ -118,18 +134,22 @@ namespace jwldnr.LLKeybdHook.App
                 if (0 == cooldown)
                     return;
 
+                if (sendDefault)
+                {
+                    _inputSimulator
+                        .Keyboard
+                        .KeyPress(VirtualKeyCode.VK_W);
+                }
+
                 var delay = GetDelayFor(key);
                 _inputSimulator
                     .Keyboard
-                    .KeyPress(VirtualKeyCode.VK_W)
                     .KeyDown(key)
                     .Sleep(delay)
                     .KeyUp(key);
 
                 await Task.Delay(cooldown)
                     .ConfigureAwait(false);
-
-                //Log("OnKeyDown callback");
 
                 SetCooldownFor(key, false);
             });
@@ -144,14 +164,6 @@ namespace jwldnr.LLKeybdHook.App
                 return VirtualKeyCode.VK_E;
 
             return VirtualKeyCode.VK_W;
-        }
-
-        private void UninstallHook()
-        {
-            _keyboardHook.KeyDown -= OnKeyDown;
-            _keyboardHook.KeyUp -= OnKeyUp;
-
-            _keyboardHook.Dispose();
         }
     }
 }

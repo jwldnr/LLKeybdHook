@@ -1,6 +1,6 @@
 ﻿namespace jwldnr.LLKeybdHook.App.WinApi
 {
-    internal enum VirtualKeyCode : ushort
+    internal enum VirtualKeyCode : byte
     {
         VK_LBUTTON = 0x01,
         VK_RBUTTON = 0x02,
