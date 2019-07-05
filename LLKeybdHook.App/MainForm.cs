@@ -36,6 +36,7 @@ namespace jwldnr.LLKeybdHook.App
         private bool _qOnCooldown;
         private bool _eOnCooldown;
         private bool _rOnCooldown;
+        private bool _yOnCooldown;
 
         public MainForm()
         {
@@ -116,11 +117,22 @@ namespace jwldnr.LLKeybdHook.App
 
         private void OnMouseDown(object sender, MouseEventArgs e)
         {
-            if (MouseButtons.Right != e.Button || _rOnCooldown)
+            if (MouseButtons.Right != e.Button)
                 return;
 
-            UseAbilityAt(VirtualKeyCode.VK_R, false);
-            SetCooldownFor(VirtualKeyCode.VK_R, true);
+            // enduring cry needs to be before phase walk (hotkey r)
+            if (false == _yOnCooldown)
+            {
+                UseAbilityAt(VirtualKeyCode.VK_Y, false);
+                SetCooldownFor(VirtualKeyCode.VK_Y, true);
+            }
+
+            // phase walk
+            else if (false == _rOnCooldown)
+            {
+                UseAbilityAt(VirtualKeyCode.VK_R, false);
+                SetCooldownFor(VirtualKeyCode.VK_R, true);
+            }
         }
 
         private int GetCooldownFor(VirtualKeyCode key)
@@ -134,16 +146,22 @@ namespace jwldnr.LLKeybdHook.App
             if (VirtualKeyCode.VK_R == key)
                 return _random.Next(4000, 4500);
 
+            if (VirtualKeyCode.VK_Y == key)
+                return _random.Next(4000, 4500);
+
             return 0;
         }
 
         private int GetDelayFor(VirtualKeyCode key)
         {
-            if (VirtualKeyCode.VK_Q == key) // storm brand (curse on hit)
+            if (VirtualKeyCode.VK_Q == key) // storm brand - curse on hit
                 return _random.Next(400, 450);
 
-            if (VirtualKeyCode.VK_E == key) // wave of conviction trap
+            if (VirtualKeyCode.VK_E == key) // wave of conviction - trap
                 return _random.Next(350, 400);
+
+            if (VirtualKeyCode.VK_Y == key) // enduring cry
+                return _random.Next(225, 275);
 
             return 0;
         }
@@ -158,6 +176,9 @@ namespace jwldnr.LLKeybdHook.App
 
             if (VirtualKeyCode.VK_R == key)
                 _rOnCooldown = value;
+
+            if (VirtualKeyCode.VK_Y == key)
+                _yOnCooldown = value;
         }
 
         private Task UseAbilityAt(VirtualKeyCode key, bool sendDefault = true)
@@ -170,23 +191,21 @@ namespace jwldnr.LLKeybdHook.App
 
                 if (sendDefault)
                 {
-                    _keyboard
-                        .KeyPress(VirtualKeyCode.VK_W);
+                    _keyboard.KeyPress(VirtualKeyCode.VK_W);
                 }
 
                 var delay = GetDelayFor(key);
-                //if (0 == delay)
-                //{
-                //    _keyboard
-                //        .KeyPress(key);
-                //}
-                //else
-                //{
+                if (0 == delay)
+                {
+                    _keyboard.KeyPress(key);
+                }
+                else
+                {
                     _keyboard
                         .KeyDown(key)
                         .Sleep(delay)
                         .KeyUp(key);
-                //}
+                }
 
                 await Task.Delay(cooldown)
                     .ConfigureAwait(false);
@@ -203,6 +222,10 @@ namespace jwldnr.LLKeybdHook.App
             if (false == _eOnCooldown)
                 return VirtualKeyCode.VK_E;
 
+            if (false == _yOnCooldown)
+                return VirtualKeyCode.VK_Y;
+
+            // do not include phase walk in default rotation
             //if (false == _rOnCooldown)
             //    return VirtualKeyCode.VK_R;
 
