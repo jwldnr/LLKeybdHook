@@ -6,22 +6,40 @@ using WindowsInput.Native;
 
 namespace jwldnr.LLKeybdHook.App
 {
+    public class Ability
+    {
+        VirtualKeyCode KeyCode { get; }
+
+        int Cooldown { get; }
+
+        int Delay { get; }
+
+        public Ability(
+            VirtualKeyCode keyCode,
+            int cooldown,
+            int delay)
+        {
+            KeyCode = keyCode;
+            Cooldown = cooldown;
+            Delay = delay;
+        }
+    }
+
     public partial class MainForm : Form
     {
-        private readonly InputSimulator _inputSimulator = new InputSimulator();
-
         private GlobalHook _mouseHook;
         private GlobalHook _keyboardHook;
 
+        private readonly IKeyboardSimulator _keyboard = new InputSimulator().Keyboard;
         private readonly Random _random = new Random();
 
         private bool _qOnCooldown;
         private bool _eOnCooldown;
+        private bool _rOnCooldown;
 
         public MainForm()
         {
             InitializeComponent();
-
             InstallHooks();
         }
 
@@ -30,7 +48,7 @@ namespace jwldnr.LLKeybdHook.App
             if (null == _mouseHook)
             {
                 _mouseHook = new GlobalHook(GlobalHook.HookTypes.Mouse);
-                //_mouseHook.MouseDown += OnMouseDown;
+                _mouseHook.MouseDown += OnMouseDown;
             }
 
             if (null == _keyboardHook)
@@ -81,15 +99,16 @@ namespace jwldnr.LLKeybdHook.App
 
             e.SuppressKeyPress = true;
 
-            if (VirtualKeyCode.VK_Q == key)
+            if (VirtualKeyCode.VK_Q == key || VirtualKeyCode.VK_E == key)
             {
-                // dont send w for totem
+                // dont send "w" for storm brand curse on hit or wave of conviction trap
                 UseAbilityAt(key, false);
             }
             else
             {
                 UseAbilityAt(key);
             }
+
             SetCooldownFor(key, true);
 
             e.Handled = true;
@@ -97,20 +116,23 @@ namespace jwldnr.LLKeybdHook.App
 
         private void OnMouseDown(object sender, MouseEventArgs e)
         {
-            if (MouseButtons.Right != e.Button || _qOnCooldown)
+            if (MouseButtons.Right != e.Button || _rOnCooldown)
                 return;
 
-            UseAbilityAt(VirtualKeyCode.VK_Q, false);
-            SetCooldownFor(VirtualKeyCode.VK_Q, true);
+            UseAbilityAt(VirtualKeyCode.VK_R, false);
+            SetCooldownFor(VirtualKeyCode.VK_R, true);
         }
 
         private int GetCooldownFor(VirtualKeyCode key)
         {
             if (VirtualKeyCode.VK_Q == key)
-                return _random.Next(4250, 4750);
+                return _random.Next(2250, 2750);
 
             if (VirtualKeyCode.VK_E == key)
                 return _random.Next(1750, 2250);
+
+            if (VirtualKeyCode.VK_R == key)
+                return _random.Next(4000, 4500);
 
             return 0;
         }
@@ -133,6 +155,9 @@ namespace jwldnr.LLKeybdHook.App
 
             if (VirtualKeyCode.VK_E == key)
                 _eOnCooldown = value;
+
+            if (VirtualKeyCode.VK_R == key)
+                _rOnCooldown = value;
         }
 
         private Task UseAbilityAt(VirtualKeyCode key, bool sendDefault = true)
@@ -145,17 +170,23 @@ namespace jwldnr.LLKeybdHook.App
 
                 if (sendDefault)
                 {
-                    _inputSimulator
-                        .Keyboard
+                    _keyboard
                         .KeyPress(VirtualKeyCode.VK_W);
                 }
 
                 var delay = GetDelayFor(key);
-                _inputSimulator
-                    .Keyboard
-                    .KeyDown(key)
-                    .Sleep(delay)
-                    .KeyUp(key);
+                //if (0 == delay)
+                //{
+                //    _keyboard
+                //        .KeyPress(key);
+                //}
+                //else
+                //{
+                    _keyboard
+                        .KeyDown(key)
+                        .Sleep(delay)
+                        .KeyUp(key);
+                //}
 
                 await Task.Delay(cooldown)
                     .ConfigureAwait(false);
@@ -171,6 +202,9 @@ namespace jwldnr.LLKeybdHook.App
 
             if (false == _eOnCooldown)
                 return VirtualKeyCode.VK_E;
+
+            //if (false == _rOnCooldown)
+            //    return VirtualKeyCode.VK_R;
 
             return VirtualKeyCode.VK_W;
         }
