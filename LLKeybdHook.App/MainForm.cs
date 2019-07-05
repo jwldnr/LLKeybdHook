@@ -18,8 +18,6 @@ namespace jwldnr.LLKeybdHook.App
         private bool _qOnCooldown;
         private bool _eOnCooldown;
 
-        private readonly VirtualKeyCode[] hotkeys = new VirtualKeyCode[] { VirtualKeyCode.VK_Q, VirtualKeyCode.VK_W, VirtualKeyCode.VK_E, VirtualKeyCode.VK_R, VirtualKeyCode.VK_T };
-
         public MainForm()
         {
             InitializeComponent();
@@ -32,7 +30,7 @@ namespace jwldnr.LLKeybdHook.App
             if (null == _mouseHook)
             {
                 _mouseHook = new GlobalHook(GlobalHook.HookTypes.Mouse);
-                _mouseHook.MouseDown += OnMouseDown;
+                //_mouseHook.MouseDown += OnMouseDown;
             }
 
             if (null == _keyboardHook)
@@ -83,7 +81,15 @@ namespace jwldnr.LLKeybdHook.App
 
             e.SuppressKeyPress = true;
 
-            UseAbilityAt(key);
+            if (VirtualKeyCode.VK_Q == key)
+            {
+                // dont send w for totem
+                UseAbilityAt(key, false);
+            }
+            else
+            {
+                UseAbilityAt(key);
+            }
             SetCooldownFor(key, true);
 
             e.Handled = true;
@@ -101,18 +107,21 @@ namespace jwldnr.LLKeybdHook.App
         private int GetCooldownFor(VirtualKeyCode key)
         {
             if (VirtualKeyCode.VK_Q == key)
-                return _random.Next(2750, 2750);
+                return _random.Next(4250, 4750);
 
             if (VirtualKeyCode.VK_E == key)
-                return _random.Next(1250, 1750);
+                return _random.Next(1750, 2250);
 
             return 0;
         }
 
         private int GetDelayFor(VirtualKeyCode key)
         {
-            if (VirtualKeyCode.VK_E == key)
-                return _random.Next(675, 725);
+            if (VirtualKeyCode.VK_Q == key) // storm brand (curse on hit)
+                return _random.Next(400, 450);
+
+            if (VirtualKeyCode.VK_E == key) // wave of conviction trap
+                return _random.Next(350, 400);
 
             return 0;
         }
