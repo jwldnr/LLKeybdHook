@@ -33,10 +33,17 @@ namespace jwldnr.LLKeybdHook.App
         private readonly IKeyboardSimulator _keyboard = new InputSimulator().Keyboard;
         private readonly Random _random = new Random();
 
-        private bool _qOnCooldown;
+        private bool _utilOnCooldown;
+        private int _utilCounter;
         private bool _eOnCooldown;
-        private bool _rOnCooldown;
+        private bool _yOnCooldowqn;
         private bool _yOnCooldown;
+
+        private bool _1OnCooldown;
+        private bool _2OnCooldown;
+        private bool _3OnCooldown;
+        private bool _4OnCooldown;
+        private bool _5OnCooldown;
 
         public MainForm()
         {
@@ -94,25 +101,21 @@ namespace jwldnr.LLKeybdHook.App
             if (Keys.W != e.KeyCode || e.Injected)
                 return;
 
-            var key = GetAvailableAbility();
-            if (VirtualKeyCode.VK_W == key)
-                return;
-
-            e.SuppressKeyPress = true;
-
-            if (VirtualKeyCode.VK_Q == key || VirtualKeyCode.VK_E == key)
+            var ability = GetAvailableAbility();
+            if (VirtualKeyCode.VK_W != ability)
             {
-                // dont send "w" for storm brand curse on hit or wave of conviction trap
-                UseAbilityAt(key, false);
-            }
-            else
-            {
-                UseAbilityAt(key);
+                e.SuppressKeyPress = true;
+
+                UseAbilityAt(ability);
+
+                e.Handled = true;
             }
 
-            SetCooldownFor(key, true);
-
-            e.Handled = true;
+            var potion = GetAvailablePotion();
+            if (VirtualKeyCode.VK_0 != potion)
+            {
+                UseAbilityAt(potion);
+            }
         }
 
         private void OnMouseDown(object sender, MouseEventArgs e)
@@ -120,65 +123,96 @@ namespace jwldnr.LLKeybdHook.App
             if (MouseButtons.Right != e.Button)
                 return;
 
-            // enduring cry needs to be before phase walk (hotkey r)
-            if (false == _yOnCooldown)
+            // vaal grace
+            if (false == _yOnCooldowqn)
             {
                 UseAbilityAt(VirtualKeyCode.VK_Y, false);
-                SetCooldownFor(VirtualKeyCode.VK_Y, true);
             }
 
-            // phase walk
-            else if (false == _rOnCooldown)
+            // evasion potion
+            if (false == _4OnCooldown)
             {
-                UseAbilityAt(VirtualKeyCode.VK_R, false);
-                SetCooldownFor(VirtualKeyCode.VK_R, true);
+                UseAbilityAt(VirtualKeyCode.VK_4, false);
+            }
+
+            // speed potion
+            if (false == _5OnCooldown)
+            {
+                UseAbilityAt(VirtualKeyCode.VK_5, false);
             }
         }
 
         private int GetCooldownFor(VirtualKeyCode key)
         {
-            if (VirtualKeyCode.VK_Q == key)
-                return _random.Next(2250, 2750);
+            // all traps
+            if (VirtualKeyCode.VK_Q == key ||
+                VirtualKeyCode.VK_E == key ||
+                VirtualKeyCode.VK_R == key ||
+                VirtualKeyCode.VK_T == key)
+            {
+                return _random.Next(750, 1000);
+            }
 
-            if (VirtualKeyCode.VK_E == key)
-                return _random.Next(1750, 2250);
-
-            if (VirtualKeyCode.VK_R == key)
-                return _random.Next(4000, 4500);
-
+            // vaal grace
             if (VirtualKeyCode.VK_Y == key)
                 return _random.Next(4000, 4500);
+
+            // evasion potion
+            if (VirtualKeyCode.VK_4 == key)
+                return 6000;
+
+            // speed potion
+            if (VirtualKeyCode.VK_5 == key)
+                return 3500;
 
             return 0;
         }
 
         private int GetDelayFor(VirtualKeyCode key)
         {
-            if (VirtualKeyCode.VK_Q == key) // storm brand - curse on hit
-                return _random.Next(400, 450);
+            if (VirtualKeyCode.VK_Q == key ||
+                VirtualKeyCode.VK_E == key ||
+                VirtualKeyCode.VK_R == key ||
+                VirtualKeyCode.VK_T == key)
+            {
+                return _random.Next(250, 300);
+            }
 
-            if (VirtualKeyCode.VK_E == key) // wave of conviction - trap
-                return _random.Next(350, 400);
+            //if (VirtualKeyCode.VK_E == key) // wave of conviction - trap
+            //    return _random.Next(350, 400);
 
-            if (VirtualKeyCode.VK_Y == key) // enduring cry
-                return _random.Next(225, 275);
+            //if (VirtualKeyCode.VK_Y == key) // enduring cry
+            //    return _random.Next(225, 275);
 
             return 0;
         }
 
         private void SetCooldownFor(VirtualKeyCode key, bool value)
         {
-            if (VirtualKeyCode.VK_Q == key)
-                _qOnCooldown = value;
+            if (VirtualKeyCode.VK_Q == key ||
+                VirtualKeyCode.VK_E == key ||
+                VirtualKeyCode.VK_R == key ||
+                VirtualKeyCode.VK_T == key)
+            {
+                _utilOnCooldown = value;
+            }
 
-            if (VirtualKeyCode.VK_E == key)
-                _eOnCooldown = value;
-
-            if (VirtualKeyCode.VK_R == key)
-                _rOnCooldown = value;
+            //if (VirtualKeyCode.VK_E == key)
+            //    _eOnCooldown = value;
 
             if (VirtualKeyCode.VK_Y == key)
-                _yOnCooldown = value;
+                _yOnCooldowqn = value;
+
+            //if (VirtualKeyCode.VK_Y == key)
+            //    _yOnCooldown = value;
+
+            // evasion potion
+            if (VirtualKeyCode.VK_4 == key)
+                _4OnCooldown = value;
+
+            // speed potion
+            if (VirtualKeyCode.VK_5 == key)
+                _5OnCooldown = value;
         }
 
         private Task UseAbilityAt(VirtualKeyCode key, bool sendDefault = true)
@@ -189,22 +223,39 @@ namespace jwldnr.LLKeybdHook.App
                 if (0 == cooldown)
                     return;
 
-                if (sendDefault)
-                {
-                    _keyboard.KeyPress(VirtualKeyCode.VK_W);
-                }
+                SetCooldownFor(key, true);
 
                 var delay = GetDelayFor(key);
                 if (0 == delay)
                 {
-                    _keyboard.KeyPress(key);
+                    if (sendDefault)
+                    {
+                        _keyboard
+                            .KeyPress(key)
+                            .KeyPress(VirtualKeyCode.VK_W);
+                    }
+                    else
+                    {
+                        _keyboard.KeyPress(key);
+                    }
                 }
                 else
                 {
-                    _keyboard
-                        .KeyDown(key)
-                        .Sleep(delay)
-                        .KeyUp(key);
+                    if (sendDefault)
+                    {
+                        _keyboard
+                            .KeyPress(VirtualKeyCode.VK_W)
+                            .KeyDown(key)
+                            .Sleep(delay)
+                            .KeyUp(key);
+                    }
+                    else
+                    {
+                        _keyboard
+                            .KeyDown(key)
+                            .Sleep(delay)
+                            .KeyUp(key);
+                    }
                 }
 
                 await Task.Delay(cooldown)
@@ -214,22 +265,53 @@ namespace jwldnr.LLKeybdHook.App
             });
         }
 
+        private VirtualKeyCode GetAvailableUtilityAbility()
+        {
+            _utilCounter += 1;
+
+            if (_utilCounter == 1)
+            {
+                return VirtualKeyCode.VK_E;
+            }
+
+            if (_utilCounter == 2)
+            {
+                return VirtualKeyCode.VK_R;
+            }
+
+            if (_utilCounter == 3)
+            {
+                return VirtualKeyCode.VK_T;
+            }
+
+            _utilCounter = 0;
+            return VirtualKeyCode.VK_Q;
+        }
+
         private VirtualKeyCode GetAvailableAbility()
         {
-            if (false == _qOnCooldown)
-                return VirtualKeyCode.VK_Q;
+            if (false == _utilOnCooldown)
+                return GetAvailableUtilityAbility();
 
-            if (false == _eOnCooldown)
-                return VirtualKeyCode.VK_E;
+            //if (false == _eOnCooldown)
+            //    return VirtualKeyCode.VK_E;
 
-            if (false == _yOnCooldown)
-                return VirtualKeyCode.VK_Y;
+            //if (false == _yOnCooldown)
+            //    return VirtualKeyCode.VK_Y;
 
             // do not include phase walk in default rotation
             //if (false == _rOnCooldown)
             //    return VirtualKeyCode.VK_R;
 
             return VirtualKeyCode.VK_W;
+        }
+
+        private VirtualKeyCode GetAvailablePotion()
+        {
+            if (false == _4OnCooldown)
+                return VirtualKeyCode.VK_4;
+
+            return VirtualKeyCode.VK_0;
         }
     }
 }
