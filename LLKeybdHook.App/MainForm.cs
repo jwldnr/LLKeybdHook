@@ -33,15 +33,8 @@ namespace jwldnr.LLKeybdHook.App
         private readonly IKeyboardSimulator _keyboard = new InputSimulator().Keyboard;
         private readonly Random _random = new Random();
 
-        private bool _utilOnCooldown;
-        private int _utilCounter;
-        private bool _eOnCooldown;
-        private bool _yOnCooldowqn;
-        private bool _yOnCooldown;
+        private bool _qOnCooldown;
 
-        private bool _1OnCooldown;
-        private bool _2OnCooldown;
-        private bool _3OnCooldown;
         private bool _4OnCooldown;
         private bool _5OnCooldown;
 
@@ -104,17 +97,13 @@ namespace jwldnr.LLKeybdHook.App
             var ability = GetAvailableAbility();
             if (VirtualKeyCode.VK_W != ability)
             {
-                e.SuppressKeyPress = true;
-
-                UseAbilityAt(ability);
-
-                e.Handled = true;
+                UseAbilityAt(ability, false);
             }
 
             var potion = GetAvailablePotion();
             if (VirtualKeyCode.VK_0 != potion)
             {
-                UseAbilityAt(potion);
+                UseAbilityAt(potion, false);
             }
         }
 
@@ -123,13 +112,7 @@ namespace jwldnr.LLKeybdHook.App
             if (MouseButtons.Right != e.Button)
                 return;
 
-            // vaal grace
-            if (false == _yOnCooldowqn)
-            {
-                UseAbilityAt(VirtualKeyCode.VK_Y, false);
-            }
-
-            // evasion potion
+            // armour potion
             if (false == _4OnCooldown)
             {
                 UseAbilityAt(VirtualKeyCode.VK_4, false);
@@ -144,67 +127,43 @@ namespace jwldnr.LLKeybdHook.App
 
         private int GetCooldownFor(VirtualKeyCode key)
         {
-            // all traps
-            if (VirtualKeyCode.VK_Q == key ||
-                VirtualKeyCode.VK_E == key ||
-                VirtualKeyCode.VK_R == key ||
-                VirtualKeyCode.VK_T == key)
+            // vortex
+            if (VirtualKeyCode.VK_Q == key)
             {
-                return _random.Next(750, 1000);
+                return _random.Next(1750, 2000);
             }
 
-            // vaal grace
-            if (VirtualKeyCode.VK_Y == key)
-                return _random.Next(4000, 4500);
-
-            // evasion potion
+            // armour potion
             if (VirtualKeyCode.VK_4 == key)
-                return 6000;
+            {
+                return 5200;
+            }
 
             // speed potion
             if (VirtualKeyCode.VK_5 == key)
-                return 3500;
+            {
+                return 4000;
+            }
 
             return 0;
         }
 
         private int GetDelayFor(VirtualKeyCode key)
         {
-            if (VirtualKeyCode.VK_Q == key ||
-                VirtualKeyCode.VK_E == key ||
-                VirtualKeyCode.VK_R == key ||
-                VirtualKeyCode.VK_T == key)
-            {
-                return _random.Next(250, 300);
-            }
-
-            //if (VirtualKeyCode.VK_E == key) // wave of conviction - trap
-            //    return _random.Next(350, 400);
-
-            //if (VirtualKeyCode.VK_Y == key) // enduring cry
-            //    return _random.Next(225, 275);
+            //if (VirtualKeyCode.VK_Q == key)
+            //{
+            //    return _random.Next(250, 300);
+            //}
 
             return 0;
         }
 
         private void SetCooldownFor(VirtualKeyCode key, bool value)
         {
-            if (VirtualKeyCode.VK_Q == key ||
-                VirtualKeyCode.VK_E == key ||
-                VirtualKeyCode.VK_R == key ||
-                VirtualKeyCode.VK_T == key)
+            if (VirtualKeyCode.VK_Q == key)
             {
-                _utilOnCooldown = value;
+                _qOnCooldown = value;
             }
-
-            //if (VirtualKeyCode.VK_E == key)
-            //    _eOnCooldown = value;
-
-            if (VirtualKeyCode.VK_Y == key)
-                _yOnCooldowqn = value;
-
-            //if (VirtualKeyCode.VK_Y == key)
-            //    _yOnCooldown = value;
 
             // evasion potion
             if (VirtualKeyCode.VK_4 == key)
@@ -265,33 +224,10 @@ namespace jwldnr.LLKeybdHook.App
             });
         }
 
-        private VirtualKeyCode GetAvailableUtilityAbility()
-        {
-            _utilCounter += 1;
-
-            if (_utilCounter == 1)
-            {
-                return VirtualKeyCode.VK_E;
-            }
-
-            if (_utilCounter == 2)
-            {
-                return VirtualKeyCode.VK_R;
-            }
-
-            if (_utilCounter == 3)
-            {
-                return VirtualKeyCode.VK_T;
-            }
-
-            _utilCounter = 0;
-            return VirtualKeyCode.VK_Q;
-        }
-
         private VirtualKeyCode GetAvailableAbility()
         {
-            if (false == _utilOnCooldown)
-                return GetAvailableUtilityAbility();
+            if (false == _qOnCooldown)
+                return VirtualKeyCode.VK_Q;
 
             //if (false == _eOnCooldown)
             //    return VirtualKeyCode.VK_E;
